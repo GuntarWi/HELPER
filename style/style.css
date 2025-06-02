@@ -1,0 +1,419 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+input{
+  height: 20px;
+}
+body{
+    font-family: "Poppins";
+    font-size: 14px;
+    background-color: #f9fbfd;
+    color: #53535f;
+    line-height: 1.5;
+    overflow-x: hidden;
+
+}
+
+select{
+  height: 30px;
+}
+
+h2{
+    font-size: 24px;
+    color: #2a2a2a;
+font-weight: normal;
+line-height: 1.5;
+font-family: poppins, sans-serif;
+font-weight: 500;
+font-style: normal;
+margin: 0;
+}
+
+h3{
+    color: #2a2a2a;
+    font-weight: normal;
+    line-height: 1.5;
+    font-weight: 500;
+  
+}
+
+p{
+    padding: 0px;
+    margin: 0px;
+    line-height: 1.8;
+    font-size: 14px;
+    margin-top: 0;
+}
+
+td {
+  text-align: left;
+}
+.text-muted {
+    color: rgba(114,132,154,0.7) !important;
+  }
+
+.main-content{
+    padding: calc(70px + 25px) 25px 25px;
+    min-height: calc(100vh - 70px);
+
+}
+
+.row{
+    display: flex;
+flex-wrap: wrap;
+margin-right: -15px;
+margin-left: -15px;
+}
+
+.m-t-40{
+    margin-top: 40px !important;
+}
+
+.m-t-2{
+    margin-top: 10px !important;
+}
+
+.badge.badge-dot:empty {
+    display: inline-block;
+  }
+
+  .badge.badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50px;
+    padding: 0px;
+  }
+
+  .badge-primary {
+    background-color: #3f87f5;
+    color: #fff;
+  }
+
+  .badge {
+    line-height: 1.7;
+    padding: 0.25em 0.7em;
+  }
+
+  .m-r-10 {
+    margin-right: 10px !important;
+  }
+
+
+  .badge {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+  
+
+  .bg-primary {
+    background-color: #3f87f5 !important;
+  }
+
+
+
+  .card-body {
+    padding: 1.5rem;
+    position: relative;
+  }
+
+  .card-body {
+    flex: 1 1 auto;
+    padding: 1.25rem;
+  }
+
+  .card {
+    position: relative;
+    background-color: #fff;
+    margin-bottom: 1.25rem;
+    border: 1px solid #edf2f9;
+    border-radius: .25rem;
+    transition: all 0.3s ease-in-out;
+    -webkit-transition: all 0.3s ease-in-out;
+    -moz-transition: all 0.3s ease-in-out;
+    -o-transition: all 0.3s ease-in-out;
+    -ms-transition: all 0.3s ease-in-out;
+  }
+
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    word-wrap: break-word;
+    background-color: #fff;
+    background-clip: border-box;
+    border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 0.25rem;
+  }
+
+  .bg-primary {
+    background-color: #3f87f5 !important;
+  }
+
+  .progress {
+    height: 4px;
+  }
+
+  .t-a-c{
+    text-align: center;
+  }
+
+  .badge.badge-dot:empty {
+    display: inline-block;
+  }
+
+
+  .badge.badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50px;
+    padding: 0px;
+  }
+
+
+  .badge-success {
+    background-color: #00c9a7;
+    color: #fff;
+  }
+
+  .bg-success {
+    background-color: #00c9a7 !important;
+  }
+
+  .m-b{
+    margin-bottom: 10px;
+  }
+
+  .chart-c{
+    flex: 1;
+  }
+
+.pr-4{
+    padding-right: 1.5rem !important;
+}
+
+.m-v-10{
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+}
+
+.border-right{
+    border-right: 1px solid #edf2f9 !important;
+}
+
+.d-md-flex{
+    display: flex !important;
+}
+
+.m-b-0{
+    margin-bottom: 0 !important;
+}
+
+.sq-r{
+width: 10px;
+height: 10px;
+color: #2a2a2a;
+border: 1px solid #2a2a2a;
+}
+.skip-r{
+    width: 10px;
+    height: 10px;
+}
+.shor-r{
+    width: 10px;
+    height: 10px;
+}
+
+.long-r{
+    width: 10px;
+    height: 10px;
+}
+
+
+
+  .badge-sqr{
+    font-size: 75%;
+font-weight: 700;
+line-height: 1;
+text-align: center;
+white-space: nowrap;
+vertical-align: baseline;
+border-radius: 0.25rem;
+transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+width: 15px;
+height: 15px;
+border-radius: 2px;
+padding: 0px;
+border: 1px solid #2a2a2a;
+margin: 1px;
+  }
+
+  
+  .badge-sqr.badge-sqr:empty {
+    display: inline-block;
+  }
+
+  .badge-sql-c{
+    background-color: #eef2fc !important;
+  }
+
+  .badge-skip-c{
+    background-color: #4872c8 !important;
+  }
+
+  .badge-short-c{
+    background-color: #7399e5 !important;
+  }
+
+  .badge-long-c{
+    background-color: #304c85 !important;
+  }
+
+  .avatar {
+    font-size: .875rem;
+    text-align: center;
+    background: #f1f2f3;
+    color: #fff;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    vertical-align: middle;
+    width: 23px;
+    height: 23px;
+    line-height: 40px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .align-items-center {
+    align-items: center !important;
+  }
+  .justify-content-between {
+    justify-content: space-between !important;
+  }
+
+  
+
+.avatar > img {
+
+    display: block;
+    width: 100%;
+    height: 100%;
+
+}
+
+img {
+    vertical-align: middle;
+    border-style: none;
+  }
+
+.padding-r{
+    padding-right: 2px;
+}
+
+
+tbody {
+    display: block;
+    max-height: 300px;
+    overflow: auto;
+}
+thead, tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;/* even columns width , fix width of table too*/
+}
+thead {
+    width: calc( 100% - 1em )/* scrollbar is average 1em/16px width, remove it from thead width */
+}
+table {
+    width: 400px;
+}
+
+.dealer-name{
+  display: inline-flex;
+}
+
+.dealer-total{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dealer-prop{
+  display: inline-flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+
+.dealer-prop > p {
+  display: inline-block;
+  margin-bottom: 0px;
+}
+
+.dealer-prop > h6 {
+  margin-bottom: 0px;
+}
+
+.dealer-bet , .dealer-net{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+}
+
+
+.dealer-bet > h6{
+  margin-bottom: 0px;
+}
+
+.dealer-net > h6 {
+  margin-bottom: 0px;
+}
+
+.in-line{
+  display: inline-block;
+}
+
+.win{
+  background-color: #00c9a7;
+}
+
+.margin-bottom-0{
+  margin-bottom: 0px;
+}
+
+.nopadding {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.error-block{
+  padding-top: 3px;
+  text-align: center;
+}
+
+.highlight-h{
+  font-weight: 500;
+}
+
+th{
+  font-weight: 500;
+}
+
+.min-h{
+  min-height: 500px;
+}
+
+th { white-space: nowrap; }
+
+.table-footer{
+  float: left;
+}
