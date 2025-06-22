@@ -48,7 +48,9 @@ function detectFraudPatterns(playerData) {
     detectTimingAnomalies(playerData),
     detectMultipleAccounts(playerData),
     detectUnusualWinRates(playerData),
-    detectSideBetManipulation(playerData)
+    detectSideBetManipulation(playerData),
+    detectWinStreakAfterBreak(playerData),
+    detectBreakHighWinPattern(playerData)
   ];
   
   // Combine all detection results
@@ -307,6 +309,97 @@ function detectSideBetManipulation(playerData) {
     result.explanation = `Unusual side bet win rate of ${Math.round(sideBetWinRate * 100)}% over ${totalSideBets} side bets`;
   }
   
+  return result;
+}
+
+/**
+ * Detects win streaks immediately after a long break, which can be suspicious
+ * @param {Object} playerData - Player betting data
+ * @returns {Object} - Detection result
+ */
+function detectWinStreakAfterBreak(playerData) {
+  const result = {
+    patternName: 'Win Streak After Break',
+    detected: false,
+    riskScore: 0,
+    explanation: ''
+  };
+
+  const rounds = playerData.rounds;
+  if (!rounds || rounds.length < 5) return result;
+
+  const LONG_BREAK_MS = 30 * 60 * 1000; // 30 minutes
+  const WIN_STREAK_MIN = 3; // Minimum win streak after break
+
+  for (let i = 1; i < rounds.length - WIN_STREAK_MIN + 1; i++) {
+    if (rounds[i].timestamp && rounds[i-1].timestamp) {
+      const timeDiff = Math.abs(new Date(rounds[i].timestamp) - new Date(rounds[i-1].timestamp));
+      if (timeDiff >= LONG_BREAK_MS) {
+        // Check for win streak after break
+        let winStreak = 0;
+        let j = i;
+        while (j < rounds.length && rounds[j].netEUR > 0) {
+          winStreak++;
+          j++;
+        }
+        if (winStreak >= WIN_STREAK_MIN) {
+          result.detected = true;
+          result.riskScore += 25 + 5 * (winStreak - WIN_STREAK_MIN); // More for longer streaks
+          result.explanation = `Win streak of ${winStreak} immediately after a long break (${Math.round(timeDiff/60000)} min)`;
+          break; // Only flag the first occurrence
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Detects dynamic patterns of break → high win → break → high win, etc.
+ * @param {Object} playerData - Player betting data
+ * @returns {Object} - Detection result
+ */
+function detectBreakHighWinPattern(playerData) {
+  const result = {
+    patternName: 'Break-High Win Alternating Pattern',
+    detected: false,
+    riskScore: 0,
+    explanation: ''
+  };
+
+  const rounds = playerData.rounds;
+  if (!rounds || rounds.length < 5) return result;
+
+  const BREAK_MS = 15 * 60 * 1000; // 15 minutes
+  const HIGH_WIN_THRESHOLD = 2 * (playerData.avgBetEUR || 10); // High win: 2x average bet, fallback 10
+  let patternCount = 0;
+  let i = 1;
+
+  while (i < rounds.length) {
+    // Look for a break
+    if (rounds[i].timestamp && rounds[i-1].timestamp) {
+      const timeDiff = Math.abs(new Date(rounds[i].timestamp) - new Date(rounds[i-1].timestamp));
+      if (timeDiff >= BREAK_MS) {
+        // After break, look for high win
+        if (rounds[i].netEUR >= HIGH_WIN_THRESHOLD) {
+          patternCount++;
+          // Skip to next possible break after this win
+          i++;
+          while (i < rounds.length && rounds[i].netEUR >= HIGH_WIN_THRESHOLD) i++;
+          continue;
+        }
+      }
+    }
+    i++;
+  }
+
+  if (patternCount >= 2) {
+    result.detected = true;
+    result.riskScore = 30 + 10 * (patternCount - 2); // More for more patterns
+    result.explanation = `Detected ${patternCount} alternating break → high win patterns (break ≥ 15 min, win ≥ ${HIGH_WIN_THRESHOLD} EUR)`;
+  }
+
   return result;
 }
 
