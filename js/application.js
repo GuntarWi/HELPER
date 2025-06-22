@@ -629,21 +629,59 @@ let MainBet = {},
     SideBetSma = {};
 
 function FraudPattern(indexStart){
-/*
-  let word = "Banker"
-
-  let Category = ["Banker","Black","Red",];
-
-  let BetPositionT = worksheetData[indexStart][BetPosition].formattedValue;
-
-
+  // Process data for fraud detection analysis
+  const playerData = {
+    rounds: [],
+    sideBets: {},
+    sharedIPCount: 0,  // This would come from backend data in a real implementation
+    complementaryBettingScore: 0  // This would come from backend data in a real implementation
+  };
   
-  if(BetPositionT.includes(word) == true){
-    console.log("Main")
-  }else{
-    console.log("test")
+  // Prepare data for analysis - convert worksheet data to the format needed by fraud detection
+  for (let i = 0; i < worksheetData.length; i++) {
+    const roundData = {
+      roundId: worksheetData[i][RoundID].formattedValue,
+      betEUR: worksheetData[i][BetEUR].value,
+      netEUR: worksheetData[i][NetEUR].value,
+      betPosition: worksheetData[i][BetPosition].formattedValue,
+      timestamp: worksheetData[i][RoundTime].formattedValue,
+      dealerName: worksheetData[i][DealerName].formattedValue
+    };
+    
+    playerData.rounds.push(roundData);
+    
+    // Track side bets
+    const betPosition = worksheetData[i][BetPosition].formattedValue;
+    if (SideBetArry.some(sideBet => betPosition.includes(sideBet))) {
+      if (!playerData.sideBets[betPosition]) {
+        playerData.sideBets[betPosition] = { count: 0, wins: 0 };
+      }
+      playerData.sideBets[betPosition].count++;
+      if (worksheetData[i][NetEUR].value > 0) {
+        playerData.sideBets[betPosition].wins++;
+      }
+    }
   }
-  */
+  
+  // For demo purposes, add some simulated risk factors based on patterns in the data
+  if (playerData.rounds.length >= 20) {
+    let winCount = 0;
+    playerData.rounds.forEach(round => {
+      if (round.netEUR > 0) winCount++;
+    });
+    
+    const winRate = winCount / playerData.rounds.length;
+    if (winRate > 0.6) {
+      // Simulate complementary betting with other players for high win rates
+      playerData.complementaryBettingScore = Math.min(0.9, winRate);
+    }
+  }
+  
+  // Run fraud detection analysis
+  const fraudResults = FraudDetection.detectFraudPatterns(playerData);
+  
+  // Update the UI with the fraud detection results
+  $('.Fraud').replaceWith(FraudDetection.formatFraudDetectionResults(fraudResults));
 }
 
 function RoundTotals (){
