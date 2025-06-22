@@ -67,171 +67,160 @@ function getSettings() {
 
 
 function drawChartJS() {
+  try {
+    const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
 
-   const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
+    var worksheet = worksheets.find(function (sheet) {
+      return sheet.name === "fraud";
+    });
 
-   var worksheet = worksheets.find(function (sheet) {
-     return sheet.name === "fraud";
-   });
-
-   
-
-   worksheet.getSummaryDataAsync().then(function (sumdata) {
-     
-    $(".Break-Heat-Map").empty();
-    $('.table-DealerTop').DataTable().clear().destroy();
-    $('.table-roundTop').DataTable().clear().destroy();
-    $('.table-bettop').DataTable().clear().destroy();
-
-     const RoundTime = 0,
-           UserId = 5,
-           UserName= 6,
-           CompanyCode = 1;
-           RoundID = 2,
-           GameType = 4,
-           BetPosition = 7,
-           DealerName = 3,
-           TableName = 6,
-           BetEUR = 8,
-           NetEUR = 9;
-
-           let RoundSkipp = 0;
-           let ShortBreak = 0;
-           let LongBreak = 0;
-           let SequentialGame = 0;
-
-           let indexStart,
-               indexNext;
-          
-           let TotalBet = 0;
-           let TotalNet = 0;
-
-           let RoundArry= [];
-           let RoundArry2= [];
-           let RatioArry= [];
-
-            let totaltest = 0;
-            var worksheetData = sumdata.data;
-     
-            let DealerArry =[];
-            let BetPositionArry =[];
-            let TableArry = [];
-
-            let up = 0,
-            down = 0,
-            same = 0,
-            negativ = 0,
-            martingeil = 0,
-            chaotic = 0;
-
-            SideBetArry = ["Banker Bonus", "Banker Pair", "Phoenix Pair", "Player Bonus","Player Pair", "Small","Super 6"];
-            
-
-
-            
-
-
-
-function Trigger(){
-
-  $('.UserName').text(worksheetData[0][UserId].formattedValue);
-  $('.CompanyCode').text(worksheetData[0][CompanyCode].formattedValue);
-
-  for (var i = 0; i < worksheetData.length; i++) {
-
-    indexStart = i;
-      
-    if(i == worksheetData.length - 1){
-
-      indexNext =  worksheetData.length -1
-
-
-    }else{
-      indexNext = i + 1
+    if (!worksheet) {
+      console.error('Worksheet "fraud" not found');
+      $('.Fraud').replaceWith('<p class="Fraud in-line highlight-h" style="color: red;">Error: Worksheet "fraud" not found</p>');
+      return;
     }
-                              
-    if(worksheetData.length > 4){
-    //  BreakCounter(indexStart,indexNext)
-    }
-    totalCounter(indexStart)
-    RoundTotla(indexStart,indexNext)
-    FraudPattern(indexStart)
-  }
 
-}
-Trigger();
+    worksheet.getSummaryDataAsync().then(function (sumdata) {
+      try {
+        $(".Break-Heat-Map").empty();
+        $('.table-DealerTop').DataTable().clear().destroy();
+        $('.table-roundTop').DataTable().clear().destroy();
+        $('.table-bettop').DataTable().clear().destroy();
 
-  function totalCounter(indexStart){
-//Tableau Bet and Net messure Sum
-   TotalBet += worksheetData[indexStart][BetEUR].value;
-   TotalNet += worksheetData[indexStart][NetEUR].value;
+        const RoundTime = 0,
+              UserId = 5,
+              UserName= 6,
+              CompanyCode = 1;
+              RoundID = 2,
+              GameType = 4,
+              BetPosition = 7,
+              DealerName = 3,
+              TableName = 6,
+              BetEUR = 8,
+              NetEUR = 9;
 
-  }
+        let RoundSkipp = 0;
+        let ShortBreak = 0;
+        let LongBreak = 0;
+        let SequentialGame = 0;
 
-  let Margin = TotalNet / TotalBet * 100;
-  console.log("Margin : " + Margin)
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  $('.Totalbet').text("€ " + TotalBet.toLocaleString('en-US', {
-    minimumFractionDigits: 2
-  }));
-  $('.Totalnet').text("€ " + TotalNet.toLocaleString('en-US', {
-    minimumFractionDigits: 2
-  }));
-  $('.Margin').text(Margin.toFixed(2) + "%");
-  $('.margin-bar').css('width', Margin.toFixed(2) + "%");
-
-
-
-
-/*
-
-  function BreakCounter(indexStart,indexNext){
-
-   // console.log("start index " + indexStart)
- //   console.log("end index "+ indexNext)
-
-   //console.log(worksheetData[0][UserId])
-
-    var startTime=moment(worksheetData[indexStart][RoundTime].formattedValue, "DD-MM-YYYY HH:mm:ss a");
-    var endTime=moment(worksheetData[indexNext][RoundTime].formattedValue, "DD-MM-YYYY HH:mm:ss a");
-    var duration = moment.duration(endTime.diff(startTime));
-    var hours = parseInt(duration.asHours());
-    var minutes = parseInt(duration.asMinutes())-hours*60;
-
-//    console.log((hours + ' hour and '+ minutes+' minutes.'))
+        let indexStart,
+            indexNext;
        
-   //    var result = endTime.diff(startTime, 'hours') + " Hrs and " +     
-   //                     endTime.diff(startTime, 'minutes') + " Mns";
-//SKIP
-      if(hours == 0 && minutes > 2 && minutes <= 10 && worksheetData[indexStart][RoundID].formattedValue !== worksheetData[indexNext][RoundID].formattedValue){
-        RoundSkipp += 1;
-        $('.skipcnt').text("format");
-        $('.break-Heat-Map').append('<div class="badge-sqr badge-skip-c"></div>')
-//SHORT        
-      }else if(hours == 0 && minutes > 10 && minutes <= 30 && worksheetData[indexStart][RoundID].formattedValue !== worksheetData[indexNext][RoundID].formattedValue){
-        ShortBreak += 1;
-        $('.break-Heat-Map').append('<div class="badge-sqr badge-short-c"></div>')
-//LONG        
-      }else if(hours >= 1 || minutes >= 31 && worksheetData[indexStart][RoundID].formattedValue !== worksheetData[indexNext][RoundID].formattedValue){
-        LongBreak += 1;
-        $('.break-Heat-Map').append('<div class="badge-sqr badge-long-c"></div>')
-// Sequential        
-      }else if(worksheetData[indexStart][RoundID].formattedValue !== worksheetData[indexNext][RoundID].formattedValue || indexStart == 0){
-        SequentialGame += 1;
-        $('.break-Heat-Map').append('<div class="badge-sqr badge-sql-c"></div>')
+        let TotalBet = 0;
+        let TotalNet = 0;
+
+        let RoundArry= [];
+        let RoundArry2= [];
+        let RatioArry= [];
+
+        let totaltest = 0;
+        var worksheetData = sumdata.data;
+  
+        let DealerArry =[];
+        let BetPositionArry =[];
+        let TableArry = [];
+
+        let up = 0,
+        down = 0,
+        same = 0,
+        negativ = 0,
+        martingeil = 0,
+        chaotic = 0;
+
+        SideBetArry = ["Banker Bonus", "Banker Pair", "Phoenix Pair", "Player Bonus","Player Pair", "Small","Super 6"];
+
+        function Trigger(){
+          try {
+            if (!worksheetData || worksheetData.length === 0) {
+              $('.Fraud').replaceWith('<p class="Fraud in-line highlight-h" style="color: red;">Error: No data available</p>');
+              return;
+            }
+
+            $('.UserName').text(worksheetData[0][UserId]?.formattedValue || 'Unknown');
+            $('.CompanyCode').text(worksheetData[0][CompanyCode]?.formattedValue || 'Unknown');
+
+            for (var i = 0; i < worksheetData.length; i++) {
+              try {
+                indexStart = i;
+                  
+                if(i == worksheetData.length - 1){
+                  indexNext = worksheetData.length -1;
+                } else {
+                  indexNext = i + 1;
+                }
+                                  
+                if(worksheetData.length > 4){
+                  // BreakCounter(indexStart,indexNext)
+                }
+                totalCounter(indexStart);
+                RoundTotla(indexStart,indexNext);
+              } catch (rowError) {
+                console.error(`Error processing row ${i}:`, rowError);
+                continue; // Skip this row and continue
+              }
+            }
+
+            // Call FraudPattern only once with all data
+            try {
+              FraudPattern();
+            } catch (fraudError) {
+              console.error('Error in fraud analysis:', fraudError);
+              $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Fraud Analysis Error: ${fraudError.message}</p>`);
+            }
+
+          } catch (triggerError) {
+            console.error('Error in Trigger function:', triggerError);
+            $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Trigger Error: ${triggerError.message}</p>`);
+          }
+        }
+
+        Trigger();
+
+        function totalCounter(indexStart){
+          try {
+            //Tableau Bet and Net messure Sum
+            TotalBet += worksheetData[indexStart][BetEUR]?.value || 0;
+            TotalNet += worksheetData[indexStart][NetEUR]?.value || 0;
+          } catch (error) {
+            console.error(`Error in totalCounter for row ${indexStart}:`, error);
+          }
+        }
+
+        let Margin = TotalBet > 0 ? TotalNet / TotalBet * 100 : 0;
+        console.log("Margin : " + Margin);
+
+        // Update UI with error handling
+        try {
+          $('.Totalbet').text("€ " + TotalBet.toLocaleString('en-US', {
+            minimumFractionDigits: 2
+          }));
+          $('.Totalnet').text("€ " + TotalNet.toLocaleString('en-US', {
+            minimumFractionDigits: 2
+          }));
+          $('.Margin').text(Margin.toFixed(2) + "%");
+          $('.margin-bar').css('width', Margin.toFixed(2) + "%");
+        } catch (uiError) {
+          console.error('Error updating UI:', uiError);
+        }
+
+      } catch (dataError) {
+        console.error('Error processing worksheet data:', dataError);
+        $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Data Processing Error: ${dataError.message}</p>`);
       }
+    }).catch(function(error) {
+      console.error('Error getting worksheet data:', error);
+      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Worksheet Error: ${error.message}</p>`);
+    });
 
-   $('.skipcnt').text(RoundSkipp);
-  $('.shortcnt').text(ShortBreak);
-  $('.longcnt').text(LongBreak);
-  $('.seqcnt').text(SequentialGame);
-
-
-              
+  } catch (criticalError) {
+    console.error('Critical error in drawChartJS:', criticalError);
+    $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Critical Error: ${criticalError.message}</p>`);
   }
+}
 
 
-*/
+
 
 function RoundTotla(indexStart,indexNext){
 
@@ -627,7 +616,7 @@ let TieRoundCnt = 0;
 let MainBet = {},
     SideBetSma = {};
 
-function FraudPattern(indexStart){
+function FraudPattern(){
   // Process data for fraud detection analysis
   const playerData = {
     rounds: [],
