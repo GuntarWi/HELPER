@@ -1,4 +1,3 @@
-
 let unregisterFilterEventListener = null;
 let unregisterMarkSelectionEventListener = null;
 let worksheet = null;
@@ -639,27 +638,45 @@ function FraudPattern(indexStart){
   
   // Prepare data for analysis - convert worksheet data to the format needed by fraud detection
   for (let i = 0; i < worksheetData.length; i++) {
-    const roundData = {
-      roundId: worksheetData[i][RoundID].formattedValue,
-      betEUR: worksheetData[i][BetEUR].value,
-      netEUR: worksheetData[i][NetEUR].value,
-      betPosition: worksheetData[i][BetPosition].formattedValue,
-      timestamp: worksheetData[i][RoundTime].formattedValue,
-      dealerName: worksheetData[i][DealerName].formattedValue
-    };
-    
-    playerData.rounds.push(roundData);
-    
-    // Track side bets
-    const betPosition = worksheetData[i][BetPosition].formattedValue;
-    if (SideBetArry.some(sideBet => betPosition.includes(sideBet))) {
-      if (!playerData.sideBets[betPosition]) {
-        playerData.sideBets[betPosition] = { count: 0, wins: 0 };
+    try {
+      // Defensive data extraction with type checking and conversion
+      const roundId = worksheetData[i][RoundID]?.formattedValue || worksheetData[i][RoundID]?.value || '';
+      const betEUR = parseFloat(worksheetData[i][BetEUR]?.value) || 0;
+      const netEUR = parseFloat(worksheetData[i][NetEUR]?.value) || 0;
+      const betPosition = worksheetData[i][BetPosition]?.formattedValue || worksheetData[i][BetPosition]?.value || '';
+      const timestamp = worksheetData[i][RoundTime]?.formattedValue || worksheetData[i][RoundTime]?.value || '';
+      const dealerName = worksheetData[i][DealerName]?.formattedValue || worksheetData[i][DealerName]?.value || '';
+      
+      // Skip invalid rows (missing essential data)
+      if (!roundId || !dealerName || isNaN(betEUR) || isNaN(netEUR)) {
+        console.warn(`Skipping invalid row ${i}: missing essential data`);
+        continue;
       }
-      playerData.sideBets[betPosition].count++;
-      if (worksheetData[i][NetEUR].value > 0) {
-        playerData.sideBets[betPosition].wins++;
+      
+      const roundData = {
+        roundId: roundId,
+        betEUR: betEUR,
+        netEUR: netEUR,
+        betPosition: betPosition,
+        timestamp: timestamp,
+        dealerName: dealerName
+      };
+      
+      playerData.rounds.push(roundData);
+      
+      // Track side bets (only if betPosition is valid)
+      if (betPosition && SideBetArry.some(sideBet => betPosition.includes(sideBet))) {
+        if (!playerData.sideBets[betPosition]) {
+          playerData.sideBets[betPosition] = { count: 0, wins: 0 };
+        }
+        playerData.sideBets[betPosition].count++;
+        if (netEUR > 0) {
+          playerData.sideBets[betPosition].wins++;
+        }
       }
+    } catch (error) {
+      console.error(`Error processing row ${i}:`, error);
+      continue; // Skip this row and continue with the next
     }
   }
   
@@ -678,10 +695,16 @@ function FraudPattern(indexStart){
   }
   
   // Run fraud detection analysis
-  const fraudResults = FraudDetection.detectFraudPatterns(playerData);
-  
-  // Update the UI with the fraud detection results
-  $('.Fraud').replaceWith(FraudDetection.formatFraudDetectionResults(fraudResults));
+  try {
+    const fraudResults = FraudDetection.detectFraudPatterns(playerData);
+    
+    // Update the UI with the fraud detection results
+    $('.Fraud').replaceWith(FraudDetection.formatFraudDetectionResults(fraudResults));
+  } catch (error) {
+    console.error('Error in fraud detection analysis:', error);
+    // Fallback display if fraud detection fails
+    $('.Fraud').replaceWith('<p class="Fraud in-line highlight-h">Error in fraud analysis</p>');
+  }
 }
 
 function RoundTotals (){

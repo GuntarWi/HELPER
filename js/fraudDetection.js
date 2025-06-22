@@ -36,59 +36,64 @@ function detectFraudPatterns(playerData) {
     color: RISK_COLORS.low
   };
   
-  // Skip analysis if no data is provided
-  if (!playerData || !playerData.rounds || playerData.rounds.length === 0) {
-    results.explanation = 'Insufficient data for analysis';
-    return results;
-  }
-  
-  // Run all detection algorithms
-  const detectionResults = [
-    detectBettingPatterns(playerData),
-    detectTimingAnomalies(playerData),
-    detectMultipleAccounts(playerData),
-    detectUnusualWinRates(playerData),
-    detectSideBetManipulation(playerData),
-    detectWinStreakAfterBreak(playerData),
-    detectBreakHighWinPattern(playerData),
-    detectLowRoundHighBet(playerData),
-    detectFavoriteDealerConcentration(playerData)
-  ];
-  
-  // Combine all detection results
-  let totalRiskScore = 0;
-  detectionResults.forEach(result => {
-    if (result.detected) {
-      results.detectedPatterns.push(result.patternName);
-      totalRiskScore += result.riskScore;
-      
-      // Add explanation with line break if not the first pattern
-      if (results.explanation) {
-        results.explanation += '<br>';
-      }
-      results.explanation += result.explanation;
+  try {
+    // Skip analysis if no data is provided
+    if (!playerData || !playerData.rounds || playerData.rounds.length === 0) {
+      results.explanation = 'Insufficient data for analysis';
+      return results;
     }
-  });
-  
-  // Calculate final risk level based on total risk score
-  results.riskScore = totalRiskScore;
-  if (totalRiskScore >= 80) {
-    results.riskLevel = RISK_LEVELS.CRITICAL;
-    results.color = RISK_COLORS.critical;
-  } else if (totalRiskScore >= 50) {
-    results.riskLevel = RISK_LEVELS.HIGH;
-    results.color = RISK_COLORS.high;
-  } else if (totalRiskScore >= 25) {
-    results.riskLevel = RISK_LEVELS.MEDIUM;
-    results.color = RISK_COLORS.medium;
-  } else {
-    results.riskLevel = RISK_LEVELS.LOW;
-    results.color = RISK_COLORS.low;
-  }
-  
-  // If no patterns detected
-  if (results.detectedPatterns.length === 0) {
-    results.explanation = 'No fraud patterns detected';
+    
+    // Run all detection algorithms with error handling
+    const detectionResults = [
+      safeDetectBettingPatterns(playerData),
+      safeDetectTimingAnomalies(playerData),
+      safeDetectMultipleAccounts(playerData),
+      safeDetectUnusualWinRates(playerData),
+      safeDetectSideBetManipulation(playerData),
+      safeDetectWinStreakAfterBreak(playerData),
+      safeDetectBreakHighWinPattern(playerData),
+      safeDetectLowRoundHighBet(playerData),
+      safeDetectFavoriteDealerConcentration(playerData)
+    ];
+    
+    // Combine all detection results
+    let totalRiskScore = 0;
+    detectionResults.forEach(result => {
+      if (result && result.detected) {
+        results.detectedPatterns.push(result.patternName);
+        totalRiskScore += result.riskScore || 0;
+        
+        // Add explanation with line break if not the first pattern
+        if (results.explanation) {
+          results.explanation += '<br>';
+        }
+        results.explanation += result.explanation || '';
+      }
+    });
+    
+    // Calculate final risk level based on total risk score
+    results.riskScore = totalRiskScore;
+    if (totalRiskScore >= 80) {
+      results.riskLevel = RISK_LEVELS.CRITICAL;
+      results.color = RISK_COLORS.critical;
+    } else if (totalRiskScore >= 50) {
+      results.riskLevel = RISK_LEVELS.HIGH;
+      results.color = RISK_COLORS.high;
+    } else if (totalRiskScore >= 25) {
+      results.riskLevel = RISK_LEVELS.MEDIUM;
+      results.color = RISK_COLORS.medium;
+    } else {
+      results.riskLevel = RISK_LEVELS.LOW;
+      results.color = RISK_COLORS.low;
+    }
+    
+    // If no patterns detected
+    if (results.detectedPatterns.length === 0) {
+      results.explanation = 'No fraud patterns detected';
+    }
+  } catch (error) {
+    console.error('Error in main fraud detection:', error);
+    results.explanation = 'Error in fraud analysis';
   }
   
   return results;
@@ -160,43 +165,66 @@ function detectTimingAnomalies(playerData) {
     explanation: ''
   };
   
-  const rounds = playerData.rounds;
-  let consistentTimingCount = 0;
-  let suspiciousBreaks = 0;
-  
-  // Check for suspiciously consistent timing between bets
-  const timeDiffs = [];
-  for (let i = 1; i < rounds.length; i++) {
-    if (rounds[i].timestamp && rounds[i-1].timestamp) {
-      const timeDiff = Math.abs(new Date(rounds[i].timestamp) - new Date(rounds[i-1].timestamp));
-      timeDiffs.push(timeDiff);
-      
-      // Check for breaks that align with dealer shifts or surveillance patterns
-      if (timeDiff > 30 * 60 * 1000 && timeDiff < 35 * 60 * 1000) { // 30-35 minute breaks
-        suspiciousBreaks++;
+  try {
+    const rounds = playerData.rounds;
+    if (!rounds || rounds.length < 2) return result;
+    
+    let consistentTimingCount = 0;
+    let suspiciousBreaks = 0;
+    
+    // Check for suspiciously consistent timing between bets
+    const timeDiffs = [];
+    for (let i = 1; i < rounds.length; i++) {
+      if (rounds[i].timestamp && rounds[i-1].timestamp) {
+        try {
+          const time1 = new Date(rounds[i].timestamp);
+          const time2 = new Date(rounds[i-1].timestamp);
+          
+          // Check if dates are valid
+          if (isNaN(time1.getTime()) || isNaN(time2.getTime())) {
+            continue;
+          }
+          
+          const timeDiff = Math.abs(time1 - time2);
+          timeDiffs.push(timeDiff);
+          
+          // Check for breaks that align with dealer shifts or surveillance patterns
+          if (timeDiff > 30 * 60 * 1000 && timeDiff < 35 * 60 * 1000) { // 30-35 minute breaks
+            suspiciousBreaks++;
+          }
+        } catch (dateError) {
+          console.warn('Invalid date format:', rounds[i].timestamp, rounds[i-1].timestamp);
+          continue;
+        }
       }
     }
-  }
-  
-  // Calculate standard deviation of time differences
-  if (timeDiffs.length > 5) {
-    const mean = timeDiffs.reduce((sum, val) => sum + val, 0) / timeDiffs.length;
-    const variance = timeDiffs.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / timeDiffs.length;
-    const stdDev = Math.sqrt(variance);
     
-    // If standard deviation is very low, timing is suspiciously consistent
-    if (stdDev / mean < 0.1) {
-      result.detected = true;
-      result.riskScore += 25;
-      result.explanation = 'Suspiciously consistent timing between bets detected';
+    // Calculate standard deviation of time differences
+    if (timeDiffs.length > 5) {
+      const mean = timeDiffs.reduce((sum, val) => sum + val, 0) / timeDiffs.length;
+      
+      // Prevent division by zero
+      if (mean > 0) {
+        const variance = timeDiffs.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / timeDiffs.length;
+        const stdDev = Math.sqrt(variance);
+        
+        // If standard deviation is very low, timing is suspiciously consistent
+        if (stdDev / mean < 0.1) {
+          result.detected = true;
+          result.riskScore += 25;
+          result.explanation = 'Suspiciously consistent timing between bets detected';
+        }
+      }
     }
-  }
-  
-  if (suspiciousBreaks >= 2) {
-    result.detected = true;
-    result.riskScore += 15;
-    if (result.explanation) result.explanation += '<br>';
-    result.explanation += `${suspiciousBreaks} suspicious breaks detected that align with dealer shifts`;
+    
+    if (suspiciousBreaks >= 2) {
+      result.detected = true;
+      result.riskScore += 15;
+      if (result.explanation) result.explanation += '<br>';
+      result.explanation += `${suspiciousBreaks} suspicious breaks detected that align with dealer shifts`;
+    }
+  } catch (error) {
+    console.error('Error in detectTimingAnomalies:', error);
   }
   
   return result;
@@ -500,6 +528,88 @@ function detectFavoriteDealerConcentration(playerData) {
   }
 
   return result;
+}
+
+// Safe wrapper functions for all detection algorithms
+function safeDetectBettingPatterns(playerData) {
+  try {
+    return detectBettingPatterns(playerData);
+  } catch (error) {
+    console.error('Error in detectBettingPatterns:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Suspicious Betting Pattern' };
+  }
+}
+
+function safeDetectTimingAnomalies(playerData) {
+  try {
+    return detectTimingAnomalies(playerData);
+  } catch (error) {
+    console.error('Error in detectTimingAnomalies:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Timing Anomalies' };
+  }
+}
+
+function safeDetectMultipleAccounts(playerData) {
+  try {
+    return detectMultipleAccounts(playerData);
+  } catch (error) {
+    console.error('Error in detectMultipleAccounts:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Multiple Account Indicators' };
+  }
+}
+
+function safeDetectUnusualWinRates(playerData) {
+  try {
+    return detectUnusualWinRates(playerData);
+  } catch (error) {
+    console.error('Error in detectUnusualWinRates:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Unusual Win Rate' };
+  }
+}
+
+function safeDetectSideBetManipulation(playerData) {
+  try {
+    return detectSideBetManipulation(playerData);
+  } catch (error) {
+    console.error('Error in detectSideBetManipulation:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Side Bet Manipulation' };
+  }
+}
+
+function safeDetectWinStreakAfterBreak(playerData) {
+  try {
+    return detectWinStreakAfterBreak(playerData);
+  } catch (error) {
+    console.error('Error in detectWinStreakAfterBreak:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Win Streak After Break' };
+  }
+}
+
+function safeDetectBreakHighWinPattern(playerData) {
+  try {
+    return detectBreakHighWinPattern(playerData);
+  } catch (error) {
+    console.error('Error in detectBreakHighWinPattern:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Break-High Win Alternating Pattern' };
+  }
+}
+
+function safeDetectLowRoundHighBet(playerData) {
+  try {
+    return detectLowRoundHighBet(playerData);
+  } catch (error) {
+    console.error('Error in detectLowRoundHighBet:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Low Round Count with High Bets' };
+  }
+}
+
+function safeDetectFavoriteDealerConcentration(playerData) {
+  try {
+    return detectFavoriteDealerConcentration(playerData);
+  } catch (error) {
+    console.error('Error in detectFavoriteDealerConcentration:', error);
+    return { detected: false, riskScore: 0, explanation: '', patternName: 'Suspicious Favorite Dealer Concentration' };
+  }
 }
 
 /**
