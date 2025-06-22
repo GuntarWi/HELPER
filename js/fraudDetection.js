@@ -50,7 +50,8 @@ function detectFraudPatterns(playerData) {
     detectUnusualWinRates(playerData),
     detectSideBetManipulation(playerData),
     detectWinStreakAfterBreak(playerData),
-    detectBreakHighWinPattern(playerData)
+    detectBreakHighWinPattern(playerData),
+    detectLowRoundHighBet(playerData)
   ];
   
   // Combine all detection results
@@ -398,6 +399,41 @@ function detectBreakHighWinPattern(playerData) {
     result.detected = true;
     result.riskScore = 30 + 10 * (patternCount - 2); // More for more patterns
     result.explanation = `Detected ${patternCount} alternating break → high win patterns (break ≥ 15 min, win ≥ ${HIGH_WIN_THRESHOLD} EUR)`;
+  }
+
+  return result;
+}
+
+/**
+ * Detects if there is a low round count with high average bets
+ * @param {Object} playerData - Player betting data
+ * @returns {Object} - Detection result
+ */
+function detectLowRoundHighBet(playerData) {
+  const result = {
+    patternName: 'Low Round Count with High Bets',
+    detected: false,
+    riskScore: 0,
+    explanation: ''
+  };
+
+  const rounds = playerData.rounds;
+  if (!rounds || rounds.length === 0) return result;
+
+  const LOW_ROUND_THRESHOLD = 8; // e.g., less than 8 rounds
+  const HIGH_BET_THRESHOLD = 100; // e.g., average bet over 100 EUR (adjust as needed)
+
+  // Calculate average bet
+  let totalBet = 0;
+  rounds.forEach(round => {
+    totalBet += round.betEUR || 0;
+  });
+  const avgBet = totalBet / rounds.length;
+
+  if (rounds.length < LOW_ROUND_THRESHOLD && avgBet >= HIGH_BET_THRESHOLD) {
+    result.detected = true;
+    result.riskScore = 35;
+    result.explanation = `Low round count (${rounds.length}) with high average bet (${avgBet.toFixed(2)} EUR)`;
   }
 
   return result;
