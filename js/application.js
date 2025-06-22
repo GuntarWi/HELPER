@@ -636,74 +636,82 @@ function FraudPattern(indexStart){
     complementaryBettingScore: 0  // This would come from backend data in a real implementation
   };
   
-  // Prepare data for analysis - convert worksheet data to the format needed by fraud detection
-  for (let i = 0; i < worksheetData.length; i++) {
-    try {
-      // Defensive data extraction with type checking and conversion
-      const roundId = worksheetData[i][RoundID]?.formattedValue || worksheetData[i][RoundID]?.value || '';
-      const betEUR = parseFloat(worksheetData[i][BetEUR]?.value) || 0;
-      const netEUR = parseFloat(worksheetData[i][NetEUR]?.value) || 0;
-      const betPosition = worksheetData[i][BetPosition]?.formattedValue || worksheetData[i][BetPosition]?.value || '';
-      const timestamp = worksheetData[i][RoundTime]?.formattedValue || worksheetData[i][RoundTime]?.value || '';
-      const dealerName = worksheetData[i][DealerName]?.formattedValue || worksheetData[i][DealerName]?.value || '';
-      
-      // Skip invalid rows (missing essential data)
-      if (!roundId || !dealerName || isNaN(betEUR) || isNaN(netEUR)) {
-        console.warn(`Skipping invalid row ${i}: missing essential data`);
-        continue;
-      }
-      
-      const roundData = {
-        roundId: roundId,
-        betEUR: betEUR,
-        netEUR: netEUR,
-        betPosition: betPosition,
-        timestamp: timestamp,
-        dealerName: dealerName
-      };
-      
-      playerData.rounds.push(roundData);
-      
-      // Track side bets (only if betPosition is valid)
-      if (betPosition && SideBetArry.some(sideBet => betPosition.includes(sideBet))) {
-        if (!playerData.sideBets[betPosition]) {
-          playerData.sideBets[betPosition] = { count: 0, wins: 0 };
-        }
-        playerData.sideBets[betPosition].count++;
-        if (netEUR > 0) {
-          playerData.sideBets[betPosition].wins++;
-        }
-      }
-    } catch (error) {
-      console.error(`Error processing row ${i}:`, error);
-      continue; // Skip this row and continue with the next
-    }
-  }
-  
-  // For demo purposes, add some simulated risk factors based on patterns in the data
-  if (playerData.rounds.length >= 20) {
-    let winCount = 0;
-    playerData.rounds.forEach(round => {
-      if (round.netEUR > 0) winCount++;
-    });
-    
-    const winRate = winCount / playerData.rounds.length;
-    if (winRate > 0.6) {
-      // Simulate complementary betting with other players for high win rates
-      playerData.complementaryBettingScore = Math.min(0.9, winRate);
-    }
-  }
-  
-  // Run fraud detection analysis
   try {
-    const fraudResults = FraudDetection.detectFraudPatterns(playerData);
+    // Prepare data for analysis - convert worksheet data to the format needed by fraud detection
+    for (let i = 0; i < worksheetData.length; i++) {
+      try {
+        // Defensive data extraction with type checking and conversion
+        const roundId = worksheetData[i][RoundID]?.formattedValue || worksheetData[i][RoundID]?.value || '';
+        const betEUR = parseFloat(worksheetData[i][BetEUR]?.value) || 0;
+        const netEUR = parseFloat(worksheetData[i][NetEUR]?.value) || 0;
+        const betPosition = worksheetData[i][BetPosition]?.formattedValue || worksheetData[i][BetPosition]?.value || '';
+        const timestamp = worksheetData[i][RoundTime]?.formattedValue || worksheetData[i][RoundTime]?.value || '';
+        const dealerName = worksheetData[i][DealerName]?.formattedValue || worksheetData[i][DealerName]?.value || '';
+        
+        // Skip invalid rows (missing essential data)
+        if (!roundId || !dealerName || isNaN(betEUR) || isNaN(netEUR)) {
+          console.warn(`Skipping invalid row ${i}: missing essential data`);
+          continue;
+        }
+        
+        const roundData = {
+          roundId: roundId,
+          betEUR: betEUR,
+          netEUR: netEUR,
+          betPosition: betPosition,
+          timestamp: timestamp,
+          dealerName: dealerName
+        };
+        
+        playerData.rounds.push(roundData);
+        
+        // Track side bets (only if betPosition is valid)
+        if (betPosition && SideBetArry.some(sideBet => betPosition.includes(sideBet))) {
+          if (!playerData.sideBets[betPosition]) {
+            playerData.sideBets[betPosition] = { count: 0, wins: 0 };
+          }
+          playerData.sideBets[betPosition].count++;
+          if (netEUR > 0) {
+            playerData.sideBets[betPosition].wins++;
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing row ${i}:`, error);
+        // Display error in UI
+        $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Error processing row ${i}: ${error.message}</p>`);
+        return; // Exit early to prevent further crashes
+      }
+    }
     
-    // Update the UI with the fraud detection results
-    $('.Fraud').replaceWith(FraudDetection.formatFraudDetectionResults(fraudResults));
+    // For demo purposes, add some simulated risk factors based on patterns in the data
+    if (playerData.rounds.length >= 20) {
+      let winCount = 0;
+      playerData.rounds.forEach(round => {
+        if (round.netEUR > 0) winCount++;
+      });
+      
+      const winRate = winCount / playerData.rounds.length;
+      if (winRate > 0.6) {
+        // Simulate complementary betting with other players for high win rates
+        playerData.complementaryBettingScore = Math.min(0.9, winRate);
+      }
+    }
+    
+    // Run fraud detection analysis
+    try {
+      const fraudResults = FraudDetection.detectFraudPatterns(playerData);
+      
+      // Update the UI with the fraud detection results
+      $('.Fraud').replaceWith(FraudDetection.formatFraudDetectionResults(fraudResults));
+    } catch (error) {
+      console.error('Error in fraud detection analysis:', error);
+      // Display detailed error in UI
+      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Fraud Analysis Error: ${error.message}</p>`);
+    }
   } catch (error) {
-    console.error('Error in fraud detection analysis:', error);
-    // Fallback display if fraud detection fails
-    $('.Fraud').replaceWith('<p class="Fraud in-line highlight-h">Error in fraud analysis</p>');
+    console.error('Critical error in FraudPattern function:', error);
+    // Display critical error in UI
+    $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Critical Error: ${error.message}</p>`);
   }
 }
 

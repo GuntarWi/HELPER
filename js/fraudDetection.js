@@ -618,6 +618,11 @@ function safeDetectFavoriteDealerConcentration(playerData) {
  * @returns {String} - HTML formatted string for display
  */
 function formatFraudDetectionResults(results) {
+  // Check if results indicate an error
+  if (results.explanation && results.explanation.includes('Error')) {
+    return `<p class="Fraud in-line highlight-h" style="color: red;">${results.explanation}</p>`;
+  }
+  
   if (!results.detectedPatterns || results.detectedPatterns.length === 0) {
     return '<p class="Fraud in-line highlight-h">Fraud pattern not detected</p>';
   }
