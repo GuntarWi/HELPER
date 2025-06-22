@@ -1,41 +1,58 @@
-// Global error handler to catch any unhandled errors
+// Global error handler to catch only critical errors
 window.addEventListener('error', function(event) {
-  console.error('Global error caught:', event.error);
-  
-  // Try to display error in multiple ways
-  try {
-    // Method 1: Try to display in the fraud area
-    if ($('.Fraud').length > 0) {
-      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red; font-size: 16px; padding: 20px; background: #ffe6e6; border: 2px solid red;">GLOBAL ERROR: ${event.error.message}</p>`);
+  // Only catch critical errors, ignore minor ones
+  if (event.error && event.error.message) {
+    const errorMessage = event.error.message.toLowerCase();
+    
+    // Ignore common non-critical errors
+    if (errorMessage.includes('script') || 
+        errorMessage.includes('resource') || 
+        errorMessage.includes('network') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('cancelled')) {
+      return;
     }
     
-    // Method 2: Try to display in body if fraud area not available
-    if ($('body').length > 0) {
-      $('body').prepend(`<div style="position: fixed; top: 0; left: 0; right: 0; background: red; color: white; padding: 10px; z-index: 9999; font-size: 14px;">CRITICAL ERROR: ${event.error.message}</div>`);
-    }
+    console.error('Critical error caught:', event.error);
     
-    // Method 3: Use alert as last resort
-    alert(`Critical Error: ${event.error.message}`);
-  } catch (displayError) {
-    // If even error display fails, use alert
-    alert(`Critical Error: ${event.error.message}`);
+    // Only display if it's a truly critical error
+    try {
+      if ($('.Fraud').length > 0) {
+        $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red; font-size: 16px; padding: 20px; background: #ffe6e6; border: 2px solid red;">CRITICAL ERROR: ${event.error.message}</p>`);
+      }
+    } catch (displayError) {
+      // Only use alert for truly critical errors
+      if (errorMessage.includes('uncaught') || errorMessage.includes('syntax')) {
+        alert(`Critical Error: ${event.error.message}`);
+      }
+    }
   }
 });
 
-// Global promise rejection handler
+// Global promise rejection handler - only for critical rejections
 window.addEventListener('unhandledrejection', function(event) {
-  console.error('Unhandled promise rejection:', event.reason);
-  
-  try {
-    if ($('.Fraud').length > 0) {
-      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red; font-size: 16px; padding: 20px; background: #ffe6e6; border: 2px solid red;">PROMISE ERROR: ${event.reason}</p>`);
-    } else if ($('body').length > 0) {
-      $('body').prepend(`<div style="position: fixed; top: 0; left: 0; right: 0; background: red; color: white; padding: 10px; z-index: 9999; font-size: 14px;">PROMISE ERROR: ${event.reason}</div>`);
-    } else {
+  // Only catch critical promise rejections
+  if (event.reason && typeof event.reason === 'string') {
+    const reason = event.reason.toLowerCase();
+    
+    // Ignore common non-critical promise rejections
+    if (reason.includes('cancelled') || 
+        reason.includes('timeout') || 
+        reason.includes('network') ||
+        reason.includes('aborted')) {
+      return;
+    }
+    
+    console.error('Critical promise rejection:', event.reason);
+    
+    try {
+      if ($('.Fraud').length > 0) {
+        $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red; font-size: 16px; padding: 20px; background: #ffe6e6; border: 2px solid red;">PROMISE ERROR: ${event.reason}</p>`);
+      }
+    } catch (displayError) {
+      // Only alert for critical promise errors
       alert(`Promise Error: ${event.reason}`);
     }
-  } catch (displayError) {
-    alert(`Promise Error: ${event.reason}`);
   }
 });
 
@@ -145,18 +162,6 @@ function getSettings() {
 
 function drawChartJS() {
   try {
-    // Add a timeout to detect hanging
-    const processingTimeout = setTimeout(() => {
-      console.warn('Data processing is taking too long, showing recovery option');
-      $('.Fraud').replaceWith(`
-        <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-          <p style="color: #856404; margin: 0 0 10px 0;"><strong>Processing Timeout</strong></p>
-          <p style="color: #856404; margin: 0 0 15px 0;">The data processing is taking longer than expected. This might be due to large datasets or complex patterns.</p>
-          <button onclick="location.reload()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reload Extension</button>
-        </div>
-      `);
-    }, 30000); // 30 second timeout
-
     const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
 
     var worksheet = worksheets.find(function (sheet) {
@@ -164,15 +169,12 @@ function drawChartJS() {
     });
 
     if (!worksheet) {
-      clearTimeout(processingTimeout);
       console.error('Worksheet "fraud" not found');
       $('.Fraud').replaceWith('<p class="Fraud in-line highlight-h" style="color: red;">Error: Worksheet "fraud" not found</p>');
       return;
     }
 
     worksheet.getSummaryDataAsync().then(function (sumdata) {
-      clearTimeout(processingTimeout); // Clear timeout on successful data load
-      
       try {
         $(".Break-Heat-Map").empty();
         $('.table-DealerTop').DataTable().clear().destroy();
@@ -297,12 +299,10 @@ function drawChartJS() {
         }
 
       } catch (dataError) {
-        clearTimeout(processingTimeout);
         console.error('Error processing worksheet data:', dataError);
         $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Data Processing Error: ${dataError.message}</p>`);
       }
     }).catch(function(error) {
-      clearTimeout(processingTimeout);
       console.error('Error getting worksheet data:', error);
       $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Worksheet Error: ${error.message}</p>`);
     });
