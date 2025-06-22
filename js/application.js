@@ -1,3 +1,44 @@
+// Global error handler to catch any unhandled errors
+window.addEventListener('error', function(event) {
+  console.error('Global error caught:', event.error);
+  
+  // Try to display error in multiple ways
+  try {
+    // Method 1: Try to display in the fraud area
+    if ($('.Fraud').length > 0) {
+      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red; font-size: 16px; padding: 20px; background: #ffe6e6; border: 2px solid red;">GLOBAL ERROR: ${event.error.message}</p>`);
+    }
+    
+    // Method 2: Try to display in body if fraud area not available
+    if ($('body').length > 0) {
+      $('body').prepend(`<div style="position: fixed; top: 0; left: 0; right: 0; background: red; color: white; padding: 10px; z-index: 9999; font-size: 14px;">CRITICAL ERROR: ${event.error.message}</div>`);
+    }
+    
+    // Method 3: Use alert as last resort
+    alert(`Critical Error: ${event.error.message}`);
+  } catch (displayError) {
+    // If even error display fails, use alert
+    alert(`Critical Error: ${event.error.message}`);
+  }
+});
+
+// Global promise rejection handler
+window.addEventListener('unhandledrejection', function(event) {
+  console.error('Unhandled promise rejection:', event.reason);
+  
+  try {
+    if ($('.Fraud').length > 0) {
+      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red; font-size: 16px; padding: 20px; background: #ffe6e6; border: 2px solid red;">PROMISE ERROR: ${event.reason}</p>`);
+    } else if ($('body').length > 0) {
+      $('body').prepend(`<div style="position: fixed; top: 0; left: 0; right: 0; background: red; color: white; padding: 10px; z-index: 9999; font-size: 14px;">PROMISE ERROR: ${event.reason}</div>`);
+    } else {
+      alert(`Promise Error: ${event.reason}`);
+    }
+  } catch (displayError) {
+    alert(`Promise Error: ${event.reason}`);
+  }
+});
+
 let unregisterFilterEventListener = null;
 let unregisterMarkSelectionEventListener = null;
 let worksheet = null;
@@ -5,69 +46,117 @@ let worksheetName = null;
 let categoryColumnNumber = null;
 let valueColumnNumber = null;
 
-
-
-
-
 $(document).ready(function () {
-   tableau.extensions.initializeAsync().then(function () {
-      // Draw the chart when initialising the dashboard.
-      getSettings();
-      drawChartJS();
-      // Set up the Settings Event Listener.
-      unregisterSettingsEventListener = tableau.extensions.settings.addEventListener(tableau.TableauEventType.SettingsChanged, (settingsEvent) => {
-         // On settings change.
-      getSettings();
-       drawChartJS();
+   try {
+      tableau.extensions.initializeAsync().then(function () {
+         try {
+            // Draw the chart when initialising the dashboard.
+            getSettings();
+            drawChartJS();
+            // Set up the Settings Event Listener.
+            unregisterSettingsEventListener = tableau.extensions.settings.addEventListener(tableau.TableauEventType.SettingsChanged, (settingsEvent) => {
+               try {
+                  // On settings change.
+                  getSettings();
+                  drawChartJS();
+               } catch (settingsError) {
+                  console.error('Error in settings change handler:', settingsError);
+                  $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Settings Error: ${settingsError.message}</p>`);
+               }
+            });
+         } catch (initError) {
+            console.error('Error during initialization:', initError);
+            $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Initialization Error: ${initError.message}</p>`);
+         }
+      }, function (err) { 
+         console.error('Error while Initializing:', err.toString());
+         $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Tableau Extension Error: ${err.toString()}</p>`);
       });
-   }, function () { console.log('Error while Initializing: ' +err.toString()); });
+   } catch (criticalError) {
+      console.error('Critical error in document ready:', criticalError);
+      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Critical Error: ${criticalError.message}</p>`);
+   }
 });
 
-
-
-
-
-
-
-
-
 function getSettings() {
-   // Once the settings change populate global variables from the settings.
+   try {
+      // Once the settings change populate global variables from the settings.
 
-   const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
+      const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
 
-   var worksheet = worksheets.find(function (sheet) {
-     return sheet.name === "fraud";
-   });
+      var worksheet = worksheets.find(function (sheet) {
+        return sheet.name === "fraud";
+      });
 
-   // If settings are changed we will unregister and re register the listener.
-   if (unregisterFilterEventListener != null) {
-      unregisterFilterEventListener();
+      if (!worksheet) {
+         console.error('Worksheet "fraud" not found in getSettings');
+         $('.Fraud').replaceWith('<p class="Fraud in-line highlight-h" style="color: red;">Error: Worksheet "fraud" not found in settings</p>');
+         return;
+      }
+
+      // If settings are changed we will unregister and re register the listener.
+      if (unregisterFilterEventListener != null) {
+         try {
+            unregisterFilterEventListener();
+         } catch (unregError) {
+            console.warn('Error unregistering filter listener:', unregError);
+         }
+      }
+
+      // If settings are changed we will unregister and re register the listener.
+      if (unregisterMarkSelectionEventListener != null) {
+         try {
+            unregisterMarkSelectionEventListener();
+         } catch (unregError) {
+            console.warn('Error unregistering mark selection listener:', unregError);
+         }
+      }
+
+      // Get worksheet
+
+      // Add listener
+      try {
+         unregisterFilterEventListener = worksheet.addEventListener(tableau.TableauEventType.FilterChanged, (filterEvent) => {
+            try {
+               drawChartJS();
+            } catch (filterError) {
+               console.error('Error in filter change handler:', filterError);
+               $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Filter Error: ${filterError.message}</p>`);
+            }
+         });
+
+         unregisterMarkSelectionEventListener = worksheet.addEventListener(tableau.TableauEventType.MarkSelectionChanged, (filterEvent) => {
+            try {
+               drawChartJS();
+            } catch (markError) {
+               console.error('Error in mark selection handler:', markError);
+               $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Mark Selection Error: ${markError.message}</p>`);
+            }
+         });
+      } catch (listenerError) {
+         console.error('Error setting up event listeners:', listenerError);
+         $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Listener Error: ${listenerError.message}</p>`);
+      }
+   } catch (settingsError) {
+      console.error('Error in getSettings:', settingsError);
+      $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Settings Error: ${settingsError.message}</p>`);
    }
-
-   // If settings are changed we will unregister and re register the listener.
-   if (unregisterMarkSelectionEventListener != null) {
-      unregisterMarkSelectionEventListener();
-   }
-
-   // Get worksheet
-
-
-   // Add listener
-   unregisterFilterEventListener = worksheet.addEventListener(tableau.TableauEventType.FilterChanged, (filterEvent) => {
-      drawChartJS();
-   });
-
-   unregisterMarkSelectionEventListener = worksheet.addEventListener(tableau.TableauEventType.MarkSelectionChanged, (filterEvent) => {
-      drawChartJS();
-   });
 }
-
-
-
 
 function drawChartJS() {
   try {
+    // Add a timeout to detect hanging
+    const processingTimeout = setTimeout(() => {
+      console.warn('Data processing is taking too long, showing recovery option');
+      $('.Fraud').replaceWith(`
+        <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+          <p style="color: #856404; margin: 0 0 10px 0;"><strong>Processing Timeout</strong></p>
+          <p style="color: #856404; margin: 0 0 15px 0;">The data processing is taking longer than expected. This might be due to large datasets or complex patterns.</p>
+          <button onclick="location.reload()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Reload Extension</button>
+        </div>
+      `);
+    }, 30000); // 30 second timeout
+
     const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
 
     var worksheet = worksheets.find(function (sheet) {
@@ -75,12 +164,15 @@ function drawChartJS() {
     });
 
     if (!worksheet) {
+      clearTimeout(processingTimeout);
       console.error('Worksheet "fraud" not found');
       $('.Fraud').replaceWith('<p class="Fraud in-line highlight-h" style="color: red;">Error: Worksheet "fraud" not found</p>');
       return;
     }
 
     worksheet.getSummaryDataAsync().then(function (sumdata) {
+      clearTimeout(processingTimeout); // Clear timeout on successful data load
+      
       try {
         $(".Break-Heat-Map").empty();
         $('.table-DealerTop').DataTable().clear().destroy();
@@ -205,10 +297,12 @@ function drawChartJS() {
         }
 
       } catch (dataError) {
+        clearTimeout(processingTimeout);
         console.error('Error processing worksheet data:', dataError);
         $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Data Processing Error: ${dataError.message}</p>`);
       }
     }).catch(function(error) {
+      clearTimeout(processingTimeout);
       console.error('Error getting worksheet data:', error);
       $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Worksheet Error: ${error.message}</p>`);
     });
@@ -218,9 +312,6 @@ function drawChartJS() {
     $('.Fraud').replaceWith(`<p class="Fraud in-line highlight-h" style="color: red;">Critical Error: ${criticalError.message}</p>`);
   }
 }
-
-
-
 
 function RoundTotla(indexStart,indexNext){
 
