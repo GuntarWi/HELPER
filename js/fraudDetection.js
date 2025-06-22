@@ -51,7 +51,8 @@ function detectFraudPatterns(playerData) {
     detectSideBetManipulation(playerData),
     detectWinStreakAfterBreak(playerData),
     detectBreakHighWinPattern(playerData),
-    detectLowRoundHighBet(playerData)
+    detectLowRoundHighBet(playerData),
+    detectFavoriteDealerConcentration(playerData)
   ];
   
   // Combine all detection results
@@ -434,6 +435,68 @@ function detectLowRoundHighBet(playerData) {
     result.detected = true;
     result.riskScore = 35;
     result.explanation = `Low round count (${rounds.length}) with high average bet (${avgBet.toFixed(2)} EUR)`;
+  }
+
+  return result;
+}
+
+/**
+ * Detects if player has high wager and positive net win with a single (favorite) dealer
+ * This version includes robust checks to prevent crashes from invalid data.
+ * @param {Object} playerData - Player betting data
+ * @returns {Object} - Detection result
+ */
+function detectFavoriteDealerConcentration(playerData) {
+  const result = {
+    patternName: 'Suspicious Favorite Dealer Concentration',
+    detected: false,
+    riskScore: 0,
+    explanation: ''
+  };
+
+  const rounds = playerData.rounds;
+  if (!rounds || rounds.length === 0) return result;
+
+  // Aggregate wager and net win per dealer
+  const dealerStats = {};
+  let totalWager = 0;
+  
+  rounds.forEach(round => {
+    // --- Safety Check ---
+    // Ensure dealerName is a valid string and bet/net are numbers
+    if (typeof round.dealerName === 'string' && round.dealerName.trim() !== '' && 
+        typeof round.betEUR === 'number' && typeof round.netEUR === 'number') {
+      
+      const dealerName = round.dealerName.trim();
+      if (!dealerStats[dealerName]) {
+        dealerStats[dealerName] = { wager: 0, net: 0 };
+      }
+      dealerStats[dealerName].wager += round.betEUR;
+      dealerStats[dealerName].net += round.netEUR;
+      totalWager += round.betEUR;
+    }
+  });
+
+  const dealerNames = Object.keys(dealerStats);
+  if (dealerNames.length < 2) return result; // Only flag if played with 2+ dealers
+
+  // Find favorite dealer
+  let favoriteDealer = dealerNames[0];
+  dealerNames.forEach(name => {
+    if (dealerStats[name].wager > dealerStats[favoriteDealer].wager) {
+      favoriteDealer = name;
+    }
+  });
+
+  const favWager = dealerStats[favoriteDealer].wager;
+  const favNet = dealerStats[favoriteDealer].net;
+  const favShare = totalWager > 0 ? favWager / totalWager : 0;
+
+  // If favorite dealer's wager share > 70% and net win is positive
+  if (favShare > 0.7 && favNet > 0) {
+    result.detected = true;
+    result.riskScore = 40;
+    result.explanation = `High wager concentration (${(favShare*100).toFixed(1)}%) and positive net win (${favNet.toFixed(2)} EUR) with dealer "${favoriteDealer}"`;
   }
 
   return result;
