@@ -448,17 +448,22 @@ function formatFraudDetectionResults(results) {
   if (!results.detectedPatterns || results.detectedPatterns.length === 0) {
     return '<p class="Fraud in-line highlight-h">Fraud pattern not detected</p>';
   }
-  
+
   const riskLevelClass = `risk-level-${results.riskLevel}`;
-  
+  let icon = '';
+  if (results.riskLevel === 'low') {
+    icon = '<img src="img/icons8-fire-cool.gif" alt="Low Risk" style="height: 24px; vertical-align: middle; margin-left: 8px;">';
+  } else if (results.riskLevel === 'medium') {
+    icon = '<img src="img/icons8-fire.gif" alt="Medium Risk" style="height: 24px; vertical-align: middle; margin-left: 8px;">';
+  } else if (results.riskLevel === 'high' || results.riskLevel === 'critical') {
+    icon = '<img src="img/icons8-fire-nova.gif" alt="High Risk" style="height: 24px; vertical-align: middle; margin-left: 8px;">';
+  }
+
   return `
     <div class="fraud-detection-results ${riskLevelClass}">
       <p class="Fraud in-line highlight-h" style="color: ${results.color}">
-        <strong>Risk Level: ${results.riskLevel.toUpperCase()}</strong> (Score: ${results.riskScore})
+        <strong>Risk Level: ${results.riskLevel.toUpperCase()}</strong> (Score: ${results.riskScore})${icon}
       </p>
-      <div class="fraud-details">
-        <p>${results.explanation}</p>
-      </div>
     </div>
   `;
 }
